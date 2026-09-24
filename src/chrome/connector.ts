@@ -1,4 +1,5 @@
 import CDP from 'chrome-remote-interface';
+import process from 'node:process';
 
 export interface CDPClient {
   Page: CDP.Client['Page'];
@@ -27,7 +28,7 @@ export async function listTargets(port: number = DEFAULT_PORT, host: string = DE
     if ((error as NodeJS.ErrnoException).code === 'ECONNREFUSED') {
       throw new Error(
         `Cannot connect to Chrome. Make sure Chrome is running with --remote-debugging-port=${port}\n` +
-        `Start Chrome with: /Applications/Google\\ Chrome.app/Contents/MacOS/Google\\ Chrome --remote-debugging-port=${port}`
+        `Start Chrome with: ${process.platform === 'win32' ? 'chrome.exe' : 'google-chrome'} --remote-debugging-port=${port}`
       );
     }
     throw error;

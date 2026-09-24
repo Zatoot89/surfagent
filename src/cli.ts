@@ -1,10 +1,11 @@
 #!/usr/bin/env node
 
-import { execSync, spawn } from 'node:child_process';
+import { spawn } from 'node:child_process';
 import fs from 'node:fs';
 import http from 'node:http';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { getChromePath, getDefaultChromeProfile, getUserDataDir, prepareUserDataDir } from './platform.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const CDP_PORT = parseInt(process.env.CDP_PORT || '9222', 10);
@@ -24,66 +25,9 @@ function checkCDP(): Promise<boolean> {
   });
 }
 
-function detectOS(): 'mac' | 'linux' | 'windows' {
-  const platform = process.platform;
-  if (platform === 'darwin') return 'mac';
-  if (platform === 'win32') return 'windows';
-  return 'linux';
-}
-
-function getChromePath(): string | null {
-  if (process.env.BROWSER_PATH) {
-    if (fs.existsSync(process.env.BROWSER_PATH)) return process.env.BROWSER_PATH;
-    console.error(`[surfagent] BROWSER_PATH set but not found: ${process.env.BROWSER_PATH}`);
-    return null;
-  }
-  const os = detectOS();
-  const paths: Record<string, string[]> = {
-    mac: [
-      '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
-      '/Applications/Google Chrome Canary.app/Contents/MacOS/Google Chrome Canary',
-      '/Applications/Chromium.app/Contents/MacOS/Chromium',
-    ],
-    linux: [
-      '/usr/bin/google-chrome',
-      '/usr/bin/google-chrome-stable',
-      '/usr/bin/chromium-browser',
-      '/usr/bin/chromium',
-      '/snap/bin/chromium',
-    ],
-    windows: [
-      'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',
-      'C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe',
-      `${process.env.LOCALAPPDATA}\\Google\\Chrome\\Application\\chrome.exe`,
-    ],
-  };
-
-  for (const p of paths[os] || []) {
-    try {
-      if (fs.existsSync(p)) return p;
-    } catch {
-      continue;
-    }
-  }
-  return null;
-}
-
 function startChrome(chromePath: string) {
-  const userDataDir = process.env.CHROME_USER_DATA_DIR || '/tmp/surfagent-chrome';
-
-  // Copy cookies from default Chrome profile if available and dir is fresh
-  const os = detectOS();
-  try {
-    execSync(`mkdir -p "${userDataDir}/Default"`, { stdio: 'ignore' });
-
-    if (os === 'mac') {
-      const defaultProfile = `${process.env.HOME}/Library/Application Support/Google/Chrome/Default`;
-      execSync(`cp "${defaultProfile}/Cookies" "${userDataDir}/Default/" 2>/dev/null || true`, { stdio: 'ignore' });
-    } else if (os === 'linux') {
-      const defaultProfile = `${process.env.HOME}/.config/google-chrome/Default`;
-      execSync(`cp "${defaultProfile}/Cookies" "${userDataDir}/Default/" 2>/dev/null || true`, { stdio: 'ignore' });
-    }
-  } catch {}
+  const userDataDir = getUserDataDir();
+  prepareUserDataDir(userDataDir, getDefaultChromeProfile());
 
   const args = [
     `--user-data-dir=${userDataDir}`,
@@ -100,6 +44,7 @@ function startChrome(chromePath: string) {
   const chrome = spawn(chromePath, args, {
     detached: true,
     stdio: 'ignore',
+    windowsHide: false,
   });
 
   chrome.unref();
@@ -145,7 +90,7 @@ Environment variables:
   CDP_PORT            Chrome debug port (default: 9222)
   API_PORT            API server port (default: 3456)
   BROWSER_PATH          Path to any Chromium-based browser (Arc, Brave, Edge, etc.)
-  CHROME_USER_DATA_DIR  Chrome profile directory (default: /tmp/surfagent-chrome)
+  CHROME_USER_DATA_DIR  Chrome profile directory (default: system temporary directory)
 
 After starting, your AI agent can call http://localhost:3456
 Full API docs: https://github.com/AllAboutAI-YT/surfagent#readme
