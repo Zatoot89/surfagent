@@ -33,7 +33,8 @@
     "build": "tsc",
     "dev": "tsc --watch",
     "api": "node dist/api/server.js",
-    "start": "node dist/cli.js start"
+    "start": "node dist/cli.js start",
+    "test": "npm run build && node --test dist/platform.test.js"
   },
   "dependencies": {
     "chrome-remote-interface": "^0.33.0",

@@ -129,13 +129,36 @@ Google Flights, YouTube, GitHub, Supabase, Hacker News, Reddit, CodePen, Polymar
 |---|---|
 | macOS | Fully supported |
 | Linux | Fully supported |
-| Windows | Not yet supported — coming soon |
+| Windows | Fully supported |
 
 ## Requirements
 
-- macOS or Linux
+- macOS, Linux, or Windows 10/11
 - Chrome or any Chromium-based browser (Arc, Brave, Edge, Vivaldi, etc.)
 - Node.js 18+
+
+### Windows
+
+Install Node.js 18+ and Chrome, Microsoft Edge, or Brave, then start surfagent from PowerShell:
+
+```powershell
+npm install -g surfagent
+surfagent start
+```
+
+Chrome, Edge, and Brave are detected from common per-user and system installation locations. To use another Chromium-based browser, set `BROWSER_PATH`:
+
+```powershell
+$env:BROWSER_PATH = "C:\Program Files\Vivaldi\Application\vivaldi.exe"
+surfagent start
+```
+
+By default, surfagent uses a separate browser profile inside the system temporary directory. Set `CHROME_USER_DATA_DIR` to keep it elsewhere:
+
+```powershell
+$env:CHROME_USER_DATA_DIR = "$env:LOCALAPPDATA\surfagent-chrome"
+surfagent start
+```
 
 ### Using a non-Chrome browser
 
